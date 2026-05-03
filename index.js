@@ -69,6 +69,29 @@ async function main() {
     return res.json({ healthy: true });
   });
 
+    app.get("/login", async (req, res) => {
+      const services = await getoidcservices();
+      const authEndPoint = `${services.authorization_endpoint}?client_id=${process.env.CLIENT_ID}&redirect_uri=${process.env.REDIRECT_URI}`;
+      res.redirect(authEndPoint);
+    });
+
+    app.get("/auth/redirect", async (req, res) => {
+      try {
+        const code = req.query.code;
+        const token = await getAccessToken(code);
+        const { access_token } = token;
+        console.log(access_token);
+        res.cookie("access_token", access_token, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === "production",
+          sameSite: "lax",
+        });
+        res.redirect("/");
+      } catch (error) {
+        res.status(500).json({ error: error.message });
+      }
+    });
+
   server.listen(PORT, () =>
     console.log(`Server running on http://localhost:${PORT}`),
   );
